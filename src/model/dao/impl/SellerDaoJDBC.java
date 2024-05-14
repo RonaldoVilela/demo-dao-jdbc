@@ -96,7 +96,41 @@ public class SellerDaoJDBC implements SellerDao{
 
 	@Override
 	public List<Seller> findAll() {
-		return null;
+		PreparedStatement st = null;
+		ResultSet rs = null;
+
+		List<Seller> sellers = new ArrayList<>();
+		
+		try {
+			st = conn.prepareStatement("SELECT seller.*, Department.Name as DepName "
+					+ "FROM seller INNER JOIN department "
+					+ "ON seller.DepartmentId = Department.Id "
+					+ "ORDER BY Id");
+			
+			
+			rs = st.executeQuery();
+			
+			Map<Integer, Department> map = new HashMap<>();
+			while(rs.next()) {
+				Department dep = map.get(rs.getInt("DepartmentId"));
+				
+				if(dep == null) {
+					dep = instantiateDepartment(rs);
+					map.put(rs.getInt("DepartmentId"), dep);
+				}
+				Seller seller = instantiateSeller(rs , dep);
+				sellers.add(seller);
+			}
+		}
+		catch(SQLException e) {
+			throw new DbException(e.getMessage());
+		}
+		finally {
+			DB.closeStatement(st);
+			DB.closeResultSet(rs);
+		}
+
+		return sellers;
 	}
 
 	@Override
